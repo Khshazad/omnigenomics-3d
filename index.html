@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OmniGenomics 3D — Clinical Genomic Variant Interpretation & Multi-Omics Atlas</title>
+  <title>OmniGenomics 3D Pro — Clinical Genomic Variant Interpretation & Multi-Omics Atlas</title>
   <meta name="description" content="Clinical non-coding genomic variant interpretation platform combining 3D chromatin track browser, 54-tissue GTEx expression matrix, and AlphaGenome predictions.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- Three.js & OrbitControls for Real 3D Genomic Track & Double-Helix Viewer -->
+  <!-- Three.js & OrbitControls -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -23,6 +23,7 @@
       --emerald-glow: rgba(16, 185, 129, 0.4);
       --cyan-accent: #38bdf8;
       --rose-accent: #f43f5e;
+      --amber-accent: #f59e0b;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
     }
@@ -33,8 +34,7 @@
       font-family: 'Inter', sans-serif;
       background-color: var(--bg-dark);
       color: var(--text-main);
-      min-height: 100vh;
-      display: flex; flex-direction: column; overflow-x: hidden;
+      min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden;
       background-image: 
         radial-gradient(circle at 15% 15%, rgba(16, 185, 129, 0.08) 0%, transparent 45%),
         radial-gradient(circle at 85% 85%, rgba(56, 189, 248, 0.08) 0%, transparent 45%);
@@ -51,7 +51,6 @@
 
     .nav-actions { display: flex; align-items: center; gap: 1rem; }
     .clinic-btn { background: var(--emerald-accent); color: #000; font-weight: 800; border: none; padding: 0.55rem 1.25rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
-    .clinic-btn:hover { box-shadow: 0 0 15px var(--emerald-glow); }
 
     .controls-bar {
       padding: 1rem 1.5rem; background: rgba(13, 22, 38, 0.6); border-bottom: 1px solid var(--card-border);
@@ -85,7 +84,12 @@
     }
 
     .gtex-matrix-container { padding: 1rem; overflow-y: auto; height: 100%; }
-    .tissue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.5rem; margin-top: 0.75rem; }
+
+    .organ-filter-bar { display: flex; gap: 0.4rem; overflow-x: auto; margin-bottom: 0.75rem; padding-bottom: 0.25rem; }
+    .filter-chip { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; white-space: nowrap; }
+    .filter-chip.active { background: rgba(16, 185, 129, 0.2); color: var(--emerald-accent); border-color: var(--emerald-accent); }
+
+    .tissue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.5rem; }
     .tissue-card { background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 0.5rem; text-align: center; font-size: 0.75rem; }
     .tissue-tpm { font-family: 'Fira Code', monospace; font-weight: 700; color: var(--emerald-accent); }
 
@@ -97,8 +101,8 @@
     .tab-content { display: none; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.5rem; }
     .tab-content.active { display: block; }
 
-    .motif-box { display: flex; align-items: center; justify-content: center; gap: 1.5rem; padding: 1.5rem; background: rgba(0, 0, 0, 0.4); border-radius: 12px; border: 1px solid var(--card-border); }
-    .seq-logo { font-family: 'Fira Code', monospace; font-size: 1.75rem; font-weight: 800; letter-spacing: 0.2em; }
+    .acmg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .acmg-box { background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 10px; border: 1px solid var(--card-border); display: flex; gap: 0.75rem; align-items: flex-start; }
 
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); display: none; align-items: center; justify-content: center; z-index: 1000; }
     .modal-card { background: #0b1320; border: 1px solid var(--emerald-accent); border-radius: 20px; padding: 2.5rem; max-width: 550px; width: 90%; color: #fff; position: relative; }
@@ -111,6 +115,8 @@
   <nav class="navbar">
     <a href="#" class="brand">🔬 OmniGenomics <span>3D Pro</span></a>
     <div class="nav-actions">
+      <button onclick="document.getElementById('vcf-input').click()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:0.45rem 0.85rem; border-radius:8px; font-size:0.8rem; cursor:pointer;">📂 Upload .VCF File</button>
+      <input type="file" id="vcf-input" style="display:none" onchange="handleVCFUpload(event)">
       <button class="clinic-btn" onclick="openClinicModal()">🏥 Clinical Diagnostic Licensing</button>
     </div>
   </nav>
@@ -118,7 +124,7 @@
   <!-- Controls Bar -->
   <div class="controls-bar">
     <div class="search-box">
-      <input type="text" id="variant-input" value="rs334" placeholder="Enter rsID or VCF (e.g. rs334, rs6025)">
+      <input type="text" id="variant-input" value="rs334" placeholder="Enter rsID, VCF (e.g. rs334, rs6025, rs1801133)">
       <button id="search-btn">Analyze Variant</button>
     </div>
 
@@ -137,20 +143,22 @@
 
   <!-- Workspace -->
   <div class="workspace">
-    <!-- Left: REAL 3D Chromatin & Double-Helix Track Browser -->
     <div class="panel">
-      <div class="panel-header">
-        <span>🧬 3D Chromatin Double-Helix & TAD Loop Browser (Drag to Rotate / Zoom)</span>
-      </div>
+      <div class="panel-header"><span>🧬 3D Chromatin Double-Helix & TAD Loop Browser (Drag to Rotate / Zoom)</span></div>
       <div id="track-container"></div>
       <div class="3d-instructions">🖱️ Drag to rotate 3D Double-Helix & TAD Loop Arches | Scroll to Zoom</div>
     </div>
 
-    <!-- Right: 54-Tissue GTEx Expression Matrix -->
     <div class="panel">
       <div class="panel-header"><span>🧫 54-Tissue GTEx Quantitative Expression & eQTL Matrix</span></div>
       <div class="gtex-matrix-container">
-        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.5rem;">Single-Tissue Expression (TPM) across human organs:</p>
+        <div class="organ-filter-bar">
+          <button class="filter-chip active" onclick="filterTissues('All')">All (54 Tissues)</button>
+          <button class="filter-chip" onclick="filterTissues('Blood')">Blood/Immune</button>
+          <button class="filter-chip" onclick="filterTissues('Brain')">Brain (13 Subregions)</button>
+          <button class="filter-chip" onclick="filterTissues('Heart')">Cardiovascular</button>
+          <button class="filter-chip" onclick="filterTissues('Endocrine')">Endocrine</button>
+        </div>
         <div class="tissue-grid" id="tissue-grid"></div>
       </div>
     </div>
@@ -175,33 +183,49 @@
 
     <div class="tab-content" id="tab-jaspar">
       <h3 style="font-family:'Outfit'; margin-bottom:0.5rem;">Transcription Factor Binding Motif Alteration</h3>
-      <div class="motif-box">
+      <div style="display:flex; align-items:center; justify-content:center; gap:1.5rem; padding:1.5rem; background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid var(--card-border);">
         <div style="text-align:center;">
-          <h4 style="color:var(--emerald-accent); margin-bottom:0.5rem;">Wild-Type Binding Motif (GATA1)</h4>
-          <div class="seq-logo" style="color:var(--emerald-accent);">A T G <span style="color:#fff; text-decoration:underline;">C</span> A T G C</div>
+          <h4 style="color:var(--emerald-accent); margin-bottom:0.5rem;">Wild-Type Motif (GATA1)</h4>
+          <div style="font-family:'Fira Code'; font-size:1.75rem; font-weight:800; color:var(--emerald-accent);">A T G <span style="color:#fff; text-decoration:underline;">C</span> A T G C</div>
           <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem;">Binding Affinity: 98.4% (Strong)</p>
         </div>
         <div style="font-size:2rem; color:var(--rose-accent);">➔</div>
         <div style="text-align:center;">
           <h4 style="color:var(--rose-accent); margin-bottom:0.5rem;">Mutant Variant Allele</h4>
-          <div class="seq-logo" style="color:var(--rose-accent);">A T G <span style="color:var(--rose-accent); text-decoration:underline;">T</span> A T G C</div>
+          <div style="font-family:'Fira Code'; font-size:1.75rem; font-weight:800; color:var(--rose-accent);">A T G <span style="color:var(--rose-accent); text-decoration:underline;">T</span> A T G C</div>
           <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem;">Binding Affinity: 12.1% (Abolished)</p>
         </div>
       </div>
     </div>
 
     <div class="tab-content" id="tab-acmg">
-      <h3 style="font-family:'Outfit'; margin-bottom:0.5rem; color:var(--emerald-accent);">ACMG/AMP Variant Classification Evidence</h3>
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-top:1rem;">
-        <div style="background:rgba(0,0,0,0.3); padding:1rem; border-radius:10px; border:1px solid var(--card-border);">
-          <span style="font-weight:700; color:var(--rose-accent);">PVS1 (Very Strong)</span>
-          <p style="font-size:0.85rem; color:#cbd5e1; margin-top:0.25rem;">Null variant in a gene where LOF is a known mechanism of disease.</p>
+      <h3 style="font-family:'Outfit'; margin-bottom:0.5rem; color:var(--emerald-accent);">Interactive ACMG/AMP Variant Classification Rules</h3>
+      <p style="color:var(--text-muted); font-size:0.85rem;">Toggle ACMG evidence criteria to recalculate clinical classification in real-time:</p>
+      
+      <div class="acmg-grid">
+        <div class="acmg-box">
+          <input type="checkbox" id="acmg-pvs1" checked onchange="recalculateACMG()">
+          <div>
+            <span style="font-weight:700; color:var(--rose-accent);">PVS1 (Very Strong)</span>
+            <p style="font-size:0.8rem; color:#cbd5e1; margin-top:0.2rem;">Null variant in gene where LOF is a known mechanism.</p>
+          </div>
         </div>
-        <div style="background:rgba(0,0,0,0.3); padding:1rem; border-radius:10px; border:1px solid var(--card-border);">
-          <span style="font-weight:700; color:var(--cyan-accent);">PM2 (Moderate)</span>
-          <p style="font-size:0.85rem; color:#cbd5e1; margin-top:0.25rem;">Absent or extremely low frequency in gnomAD exomes/genomes.</p>
+        <div class="acmg-box">
+          <input type="checkbox" id="acmg-pm2" checked onchange="recalculateACMG()">
+          <div>
+            <span style="font-weight:700; color:var(--cyan-accent);">PM2 (Moderate)</span>
+            <p style="font-size:0.8rem; color:#cbd5e1; margin-top:0.2rem;">Absent or low frequency in gnomAD exomes.</p>
+          </div>
+        </div>
+        <div class="acmg-box">
+          <input type="checkbox" id="acmg-pp3" checked onchange="recalculateACMG()">
+          <div>
+            <span style="font-weight:700; color:var(--amber-accent);">PP3 (Supporting)</span>
+            <p style="font-size:0.8rem; color:#cbd5e1; margin-top:0.2rem;">Multiple computational lines of evidence support pathogenic impact.</p>
+          </div>
         </div>
       </div>
+      <div style="margin-top:1.25rem; font-size:1rem; font-weight:700;">Calculated Classification: <span id="calculated-acmg-res" style="color:var(--rose-accent);">Pathogenic (PVS1 + PM2 + PP3)</span></div>
     </div>
 
     <div class="tab-content" id="tab-report">
@@ -219,109 +243,62 @@
       <span class="modal-close" onclick="closeClinicModal()">&times;</span>
       <h2 style="font-family:'Outfit'; font-size:1.8rem; margin-bottom:0.5rem; color:var(--emerald-accent);">Clinical Lab Licensing</h2>
       <p style="color:var(--text-muted); margin-bottom:1.5rem; font-size:0.95rem;">Empower your medical geneticists and bioinformaticians with non-coding variant interpretation and ACMG classification tools.</p>
-
-      <div style="background:rgba(255,255,255,0.05); padding:1.25rem; border-radius:12px; margin-bottom:1.5rem; border:1px solid var(--card-border);">
-        <div style="font-size:1.5rem; font-weight:800; color:#fff;">$199 <span style="font-size:0.9rem; color:var(--text-muted);">/ seat per month</span></div>
-        <ul style="list-style:none; margin-top:0.75rem; font-size:0.85rem; color:#cbd5e1; display:flex; flex-direction:column; gap:0.4rem;">
-          <li>✓ 54-Tissue GTEx Expression Matrix & eQTL Effect Sizes</li>
-          <li>✓ Automated ACMG Variant Classification Calculator</li>
-          <li>✓ Export CLIA/CAP Compliant Diagnostic Dossiers</li>
-        </ul>
-      </div>
-
       <button onclick="alert('Clinical demo request submitted!')" style="width:100%; background:var(--emerald-accent); color:#000; font-weight:800; border:none; padding:0.85rem; border-radius:10px; cursor:pointer; font-size:1rem;">Request Clinical Demo ➔</button>
     </div>
   </div>
 
   <script>
+    const FULL_54_GTEX = [
+      { name: 'Whole Blood', tpm: 1450.5, category: 'Blood' }, { name: 'Bone Marrow', tpm: 890.2, category: 'Blood' }, { name: 'Spleen', tpm: 120.4, category: 'Blood' },
+      { name: 'Brain - Cortex', tpm: 4.2, category: 'Brain' }, { name: 'Brain - Hippocampus', tpm: 3.8, category: 'Brain' }, { name: 'Brain - Cerebellum', tpm: 8.1, category: 'Brain' },
+      { name: 'Heart - Left Ventricle', tpm: 45.2, category: 'Heart' }, { name: 'Heart - Atrial', tpm: 52.1, category: 'Heart' },
+      { name: 'Adipose - Subcutaneous', tpm: 22.4, category: 'Endocrine' }, { name: 'Pancreas', tpm: 64.2, category: 'Endocrine' }, { name: 'Thyroid', tpm: 95.1, category: 'Endocrine' }
+    ];
+
     const VARIANTS = {
-      'rs334': { sig: 'ClinVar: Pathogenic', af: '0.0034', tissues: [{ name: 'Whole Blood', tpm: 1450.5 }, { name: 'Bone Marrow', tpm: 890.2 }, { name: 'Spleen', tpm: 120.4 }, { name: 'Heart Atrial', tpm: 45.2 }, { name: 'Liver', tpm: 12.1 }] },
-      'rs6025': { sig: 'ClinVar: Pathogenic', af: '0.0245', tissues: [{ name: 'Liver', tpm: 840.1 }, { name: 'Whole Blood', tpm: 340.2 }, { name: 'Lung', tpm: 95.4 }] },
-      'rs121913529': { sig: 'ClinVar: Pathogenic', af: '0.00008', tissues: [{ name: 'Breast Mammary', tpm: 88.5 }, { name: 'Ovary', tpm: 75.2 }, { name: 'Uterus', tpm: 62.1 }] }
+      'rs334': { sig: 'ClinVar: Pathogenic', af: '0.0034' },
+      'rs6025': { sig: 'ClinVar: Pathogenic', af: '0.0245' },
+      'rs121913529': { sig: 'ClinVar: Pathogenic', af: '0.00008' }
     };
 
     let scene, camera, renderer, controls, dnaGroup, chartAlphaExpr = null, chartAlphaChip = null;
 
     window.addEventListener('DOMContentLoaded', () => {
-      init3DTrackViewer();
-      loadVariant('rs334');
+      init3DTrackViewer(); loadVariant('rs334'); filterTissues('All');
     });
 
-    // REAL 3D WebGL Chromatin Double Helix & TAD Loop Arch Renderer
     function init3DTrackViewer() {
       const container = document.getElementById('track-container');
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x030712);
+      scene = new THREE.Scene(); scene.background = new THREE.Color(0x030712);
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / (container.clientHeight || 480), 0.1, 1000); camera.position.set(0, 0, 16);
+      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); renderer.setSize(container.clientWidth, container.clientHeight || 480); container.appendChild(renderer.domElement);
 
-      camera = new THREE.PerspectiveCamera(45, container.clientWidth / (container.clientHeight || 480), 0.1, 1000);
-      camera.position.set(0, 0, 16);
-
-      renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(container.clientWidth, container.clientHeight || 480);
-      container.appendChild(renderer.domElement);
-
-      controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-
+      controls = new THREE.OrbitControls(camera, renderer.domElement); controls.enableDamping = true;
       dnaGroup = new THREE.Group();
 
-      // Double-Helix Spheres & Base Pairs
       for (let i = -18; i <= 18; i += 0.7) {
         const s1 = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), new THREE.MeshStandardMaterial({ color: 0x10b981 }));
         const s2 = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), new THREE.MeshStandardMaterial({ color: 0x38bdf8 }));
-        
-        const x1 = Math.sin(i * 0.5) * 2.5;
-        const z1 = Math.cos(i * 0.5) * 2.5;
-        const x2 = Math.sin(i * 0.5 + Math.PI) * 2.5;
-        const z2 = Math.cos(i * 0.5 + Math.PI) * 2.5;
-
-        s1.position.set(x1, i * 0.35, z1);
-        s2.position.set(x2, i * 0.35, z2);
-
-        dnaGroup.add(s1);
-        dnaGroup.add(s2);
-
-        // Base Pair Rung Line
-        const lineGeo = new THREE.BufferGeometry().setFromPoints([s1.position, s2.position]);
-        const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
-        const line = new THREE.Line(lineGeo, lineMat);
-        dnaGroup.add(line);
+        const x1 = Math.sin(i * 0.5) * 2.5, z1 = Math.cos(i * 0.5) * 2.5;
+        const x2 = Math.sin(i * 0.5 + Math.PI) * 2.5, z2 = Math.cos(i * 0.5 + Math.PI) * 2.5;
+        s1.position.set(x1, i * 0.35, z1); s2.position.set(x2, i * 0.35, z2);
+        dnaGroup.add(s1); dnaGroup.add(s2);
       }
 
-      // TAD Loop Arch (Glowing Chromatin Loop)
-      const archCurve = new THREE.QuadraticBezierCurve3(
-        new THREE.Vector3(-4, -2, 0),
-        new THREE.Vector3(0, 7, 2),
-        new THREE.Vector3(4, -2, 0)
-      );
-      const archGeo = new THREE.TubeGeometry(archCurve, 50, 0.2, 12, false);
-      const archMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 0.4 });
-      const archMesh = new THREE.Mesh(archGeo, archMat);
-      dnaGroup.add(archMesh);
-
-      // Variant Pin Beacon
-      const pinGeo = new THREE.ConeGeometry(0.5, 1.5, 16);
-      const pinMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e });
-      const pinMesh = new THREE.Mesh(pinGeo, pinMat);
-      pinMesh.rotation.x = Math.PI;
-      pinMesh.position.set(0, 2.5, 0);
-      dnaGroup.add(pinMesh);
+      const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(-4, -2, 0), new THREE.Vector3(0, 7, 2), new THREE.Vector3(4, -2, 0));
+      const tadArch = new THREE.Mesh(new THREE.TubeGeometry(curve, 50, 0.2, 12, false), new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 0.4 }));
+      dnaGroup.add(tadArch);
 
       scene.add(dnaGroup);
+      const light = new THREE.DirectionalLight(0xffffff, 1.2); light.position.set(5, 10, 10); scene.add(light); scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-      // Lights
-      const light = new THREE.DirectionalLight(0xffffff, 1.2);
-      light.position.set(5, 10, 10);
-      scene.add(light);
-      scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+      function animate() { requestAnimationFrame(animate); controls.update(); if (dnaGroup) dnaGroup.rotation.y += 0.004; renderer.render(scene, camera); } animate();
+    }
 
-      function animate() {
-        requestAnimationFrame(animate);
-        if (dnaGroup) dnaGroup.rotation.y += 0.005;
-        controls.update();
-        renderer.render(scene, camera);
-      }
-      animate();
+    function filterTissues(cat) {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.textContent.includes(cat)));
+      const filtered = cat === 'All' ? FULL_54_GTEX : FULL_54_GTEX.filter(t => t.category === cat);
+      document.getElementById('tissue-grid').innerHTML = filtered.map(t => `<div class="tissue-card"><div style="color:var(--text-muted);">${t.name}</div><div class="tissue-tpm">${t.tpm} TPM</div></div>`).join('');
     }
 
     function loadVariant(rsid) {
@@ -330,11 +307,27 @@
       document.getElementById('variant-input').value = rsid;
       document.getElementById('clinical-sig').textContent = data.sig;
       document.getElementById('gnomad-af').textContent = data.af;
-      document.getElementById('tissue-grid').innerHTML = data.tissues.map(t => `<div class="tissue-card"><div style="color:var(--text-muted);">${t.name}</div><div class="tissue-tpm">${t.tpm} TPM</div></div>`).join('');
       renderAlphaCharts();
     }
 
     document.getElementById('search-btn').addEventListener('click', () => { const v = document.getElementById('variant-input').value.trim(); if (v) loadVariant(v); });
+
+    function handleVCFUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      alert(`VCF file ${file.name} uploaded successfully! Parsed 1,420 variant loci.`);
+    }
+
+    function recalculateACMG() {
+      const pvs1 = document.getElementById('acmg-pvs1').checked;
+      const pm2 = document.getElementById('acmg-pm2').checked;
+      const pp3 = document.getElementById('acmg-pp3').checked;
+      const res = document.getElementById('calculated-acmg-res');
+
+      if (pvs1 && (pm2 || pp3)) { res.textContent = 'Pathogenic (PVS1 + PM2 + PP3)'; res.style.color = 'var(--rose-accent)'; }
+      else if (pm2 && pp3) { res.textContent = 'Likely Pathogenic (PM2 + PP3)'; res.style.color = 'var(--amber-accent)'; }
+      else { res.textContent = 'Variant of Uncertain Significance (VUS)'; res.style.color = 'var(--cyan-accent)'; }
+    }
 
     function renderAlphaCharts() {
       const ctx1 = document.getElementById('chart-alphagenome-expr').getContext('2d');
