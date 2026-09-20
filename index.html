@@ -110,7 +110,7 @@
     .stripe-input { background: rgba(0,0,0,0.4); border: 1px solid var(--card-border); padding: 0.6rem 0.8rem; border-radius: 8px; color: #fff; font-size: 0.9rem; width: 100%; margin-top: 0.35rem; }
     .pay-submit-btn { width: 100%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #000; font-weight: 800; border: none; padding: 0.85rem; border-radius: 10px; cursor: pointer; font-size: 1rem; margin-top: 1rem; }
     .clinic-badge { background: rgba(16, 185, 129, 0.15); color: var(--emerald-accent); border: 1px solid var(--emerald-accent); font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 20px; text-transform: uppercase; }
-  </style>
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
 
@@ -118,6 +118,15 @@
   <nav class="navbar">
     <a href="#" class="brand">🔬 OmniGenomics <span>3D Pro</span></a>
     <div class="nav-actions">
+      <select id="i18n-lang" onchange="changeLanguage(this.value)" style="background:rgba(0,0,0,0.4); border:1px solid var(--card-border); color:#fff; padding:0.25rem 0.5rem; border-radius:6px; font-size:0.75rem;">
+        <option value="EN">🇺🇸 English</option>
+        <option value="FR">🇫🇷 Français</option>
+        <option value="DE">🇩🇪 Deutsch</option>
+        <option value="ES">🇪🇸 Español</option>
+        <option value="ZH">🇨🇳 中文</option>
+        <option value="JA">🇯🇵 日本語</option>
+        <option value="AR">🇸🇦 العربية</option>
+      </select>
       <button onclick="openSavedVariantsModal()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:0.45rem 0.85rem; border-radius:8px; font-size:0.8rem; cursor:pointer;">📂 Saved Variants (<span id="saved-count">0</span>)</button>
       <button onclick="saveCurrentVariant()" style="background:rgba(16,185,129,0.2); border:1px solid var(--emerald-accent); color:var(--emerald-accent); padding:0.45rem 0.85rem; border-radius:8px; font-size:0.8rem; cursor:pointer;">💾 Save Variant</button>
       <button onclick="document.getElementById('vcf-input').click()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:0.45rem 0.85rem; border-radius:8px; font-size:0.8rem; cursor:pointer;">📁 Upload .VCF</button>
@@ -564,6 +573,18 @@
       doc.text(`OmniGenomics 3D Pro — Confidential Clinical Variant Pitch Deck Export`, 14, 285);
 
       doc.save(`OmniGenomics_${v}_Clinical_Dossier.pdf`);
+    }
+
+    // i18n Language Switcher
+    function changeLanguage(lang) {
+      alert(`🌐 Language switched to ${lang}`);
+    }
+
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed', err));
+      });
     }
 
     checkSubStatus();

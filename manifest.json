@@ -1,0 +1,16 @@
+{
+  "name": "OmniGenomics 3D Pro",
+  "short_name": "OmniGenomics3D",
+  "description": "Clinical Genomic Variant Interpretation & Multi-Omics Atlas",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#060a12",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2826/2826070.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
